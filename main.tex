@@ -1,0 +1,179 @@
+% Sample use of nato-rto.cls from http://nato-rto-latex.googlecode.com
+%
+% Process with
+%
+%  pdflatex sample
+%  bibtex sample
+%  pdflatex sample
+%  pdflatex sample
+%
+% See README.txt for further information
+
+% About 30 pages
+
+\title{Towards a scalable quantum lattice Boltzmann method}
+
+\author{\large\bf Monica L\u{a}c\u{a}tu\c{s}, \large\bf C\u{a}lin A. Georgescu, \large\bf Merel A. Schalkers, \large\bf Matthias M\"oller\\
+        Delft Institute of Applied Mathematics\\
+        Delft University of Technology\\
+        Mekelweg 4\\
+        Delft, 2628CD\\
+        The Netherlands\\[5pt]
+        \{M.I.L.Lacatus\},\{C.A.Georgescu\},\{M.A.Schalkers\},\{M.Moller\}@tudelft.nl}
+
+\documentclass{nato-sto}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsfonts,amssymb,amsmath,amscd,amsthm}
+\usepackage{upgreek}
+\usepackage{subfigure}
+\usepackage{subfigmat}
+\usepackage{graphicx}
+\usepackage{pifont}
+\usepackage{ulem}
+\usepackage{enumitem}
+\usepackage{svg}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{circuitikz}
+\usetikzlibrary{calc}
+\usepackage{braket}
+\usepackage{makecell}
+\usepackage{listings}
+% \usepackage[toc,page]{appendix}
+\usepackage{tikz}
+\usepackage{pgfplots,pgfplotstable}
+\pgfplotsset{width=8cm,compat=1.9}
+\usetikzlibrary{quantikz,arrows.meta,arrows,shapes.geometric,backgrounds,calc,positioning,fit,pgfplots.dateplot}
+\usepackage{pgfplotstable}
+
+\DeclareUnicodeCharacter{03B8}{\ensuremath{\theta}}
+\DeclareUnicodeCharacter{03C6}{\ensuremath{\varphi}}
+\DeclareUnicodeCharacter{03C8}{\ensuremath{\psi}}
+
+\newcommand{\libket}{$\ket{\text{Lib}}$}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\tikzset{
+  basic box/.style = {
+    shape = rectangle,
+    align = center,
+    draw  = #1,
+    fill  = #1!25,
+    rounded corners},
+  header node/.style = {
+    Minimum Width = header nodes,
+    text depth    = +0pt,
+    fill          = white,
+    align         = right,
+    draw},
+  header/.style = {%
+    inner ysep = +1em,
+    inner xsep = +1em,
+    append after command = {
+      \pgfextra{\let\TikZlastnode\tikzlastnode}
+      node [header node] (header-\TikZlastnode) at (\TikZlastnode.north) {#1}
+      node [span = (\TikZlastnode)(header-\TikZlastnode)]
+        at (fit bounding box) (h-\TikZlastnode) {}
+    }
+  },
+  hv/.style = {to path = {-|(\tikztotarget)\tikztonodes}},
+  vh/.style = {to path = {|-(\tikztotarget)\tikztonodes}},
+  fat blue line/.style = {ultra thick, blue}
+}
+
+\lstset{style=mystyle}
+
+\newtheorem{definition}{Definition}[section]
+\newtheorem{remark}{Remark}[section]
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{exercise}[theorem]{Exercise}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+% Please uncomment one of the following
+\papernumber{4} 
+ 
+\publicationreference{STO-AVT-377 - Introduction to Quantum Computing in Fluid Dynamics}
+\classification{APPROVED FOR PUBLIC RELEASE} 
+
+% =============================================================================
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Quantum computing is an emerging technology, that has the potential to radically change the way we will be solving computational problems in the future. This will, however, require dedicated research to translate the known equations in a way that fits the natural capabilities of a quantum computer. One such computational problem that is always at the forefront of research and improvements in compute technology is computational fluid dynamics. Computational fluid dynamics is used in many industries such as aviation, the naval industry and many more. As computing the flow field around an object is computationally expensive, this field could potentially benefit greatly from a novel compute technology. In these lecture notes we will give the reader insight into how quantum computers could be of use in solving the problems of computational fluid dynamics. 
+
+
+To support the reader in getting started with quantum CFD (QCFD), we first give a brief overview of classical CFD methods. We subsequently will give a more in-depth overview of the Boltzmann equation and the lattice Boltzmann method. 
+Finally we introduce the reader to the quantum Boltzmann methods. We first give an overview of the quantum Boltzmann methods that have been developed so far and highlight their main features and drawbacks. Subsequently we give an in-depth explanation of the QLBM methods that we have developed. We start by presenting our collisionless quantum lattice Boltzmann method and the quantum momentum exchange method that has been developed to enable efficient measurement of the obtained results. The second method we present is the so-called space-time encoding method. This is the first quantum method that has been able to perform both collision and streaming as a quantum unitary for multiple steps. In order to understand the space-time encoding method we also give a proof that neither of the other two major encoding methods that had been used thus far are able to encode both streaming and collision unitarily, showing the need for such a novel encoding technique.  
+
+\end{abstract}
+
+
+These lectures notes are compounded using the papers \textit{Efficient and fail-safe quantum algorithm for the transport equation}, \textit{On the importance of data encoding in quantum Boltzmann methods} and \textit{Momentum exchange method for quantum lattice Boltzmann methods}.
+\pagebreak
+\tableofcontents
+
+% =============================================================================
+\input{sections-2024/introduction}
+
+% =============================================================================
+\input{sections-2024/classical_cfd}
+
+% =============================================================================
+\input{sections-2024/cqlbm}
+
+% =============================================================================
+\input{sections-2024/space_time}
+
+% =============================================================================
+
+\input{sections-2024/complexity_analysis}
+
+% =============================================================================
+\input{sections-2024/conclusions}
+
+% =============================================================================
+\section*{Acknowledgments}
+We first and foremost want to thank C\u{a}lin Georgescu for proofreading and suggesting valuable changes to these lecture notes. Furthermore we gratefully acknowledge \textbf{Fujitsu Limited} and the \textbf{Netherlands Enterprise Agency} under project number PPS23-3-03596728 for financial support.
+
+\bibliographystyle{nato-sto}
+\bibliography{sections-2024/bib} % when using a BibTeX database -- and you should!
+
+\appendix
+
+\input{sections-2024/complexity_analysis_appendix}
+
+% =============================================================================
+
+% =============================================================================
+
+
+\end{document}
+

@@ -1,0 +1,235 @@
+\section{Data encoding}\label{sec:proof}
+As in any computational field, data encoding is pivotal for reaching a good result. More than five decades of classical CFD research and application have established `good practices' for storing field data such as densities and velocities at, e.g., the grid points or cell centers as floating-point numbers following the IEEE-754 standard. Every now and then new hardware developments stimulate research into non-standard formats, like reduced or mixed-precision \cite{Freytag2022}, but, in general, data encoding is not considered to be an open problem.
+
+Not so in QCFD and, in particular, quantum Boltzmann methods. In this section we will review the main data encodings currently used for QBM and show that in all of them either the streaming step or the collision step cannot be unitary. This result, though discouraging at first sight, should be interpreted as wake-up call that novel quantum encodings for CFD states are imperative for devising full-fledged QCFD applications in the future. We propose one such novel encoding in Section \ref{sec:novel_encoding} and discuss its potential and limitations.
+
+The two mainstream encodings of the velocity vector are the amplitude based encoding and the computational basis state encoding. In what follows, we will consider both approaches separately and show how they both lead to a contradiction in the unitarity of either the collision or the streaming operation. 
+
+\subsection{Amplitude based encoding}\label{ssec:amplitude_based_encoding}
+The first type of encoding we consider is the so-called amplitude based encoding, used for several quantum Boltzmann methods \cite{Todorova2020, Budinski2020, Budinski2021, Schalkers2022}.
+The amplitude based encoding of the velocity vector is such that at each location $\ket{x}$ there can be multiple particles with different velocities, for instance $\ket{v_0}$, $\ket{v_1}$, $\ket{v_2}$ and $\ket{v_3}$ for D2Q4. Here and below, $\ket{i}$ denotes the representation of $i$ as bit string. The state of the system at this point $x$ can then be encoded as\footnote{Note that we distinguish in our notation between the grid point $x$ and its representation $\ket{x}$ as part of the quantum register.}
+\begin{equation}
+\ket{x}\left (\alpha_0\ket{v_0} + \alpha_1\ket{v_1} + \alpha_2\ket{v_2} + \alpha_3\ket{v_3} \right ),
+\end{equation}
+where $\alpha_0$, $\alpha_1$, $\alpha_2$ and $\alpha_3$ are complex numbers that simply represent the relative weight or amount of particles traveling at the given velocity at grid point $x$. For simplicity we will assume that $|\alpha_0|^2+|\alpha_1|^2+|\alpha_2|^2+|\alpha_3|^2=1$, and so in this example there are only particles at grid point $x$ but the proof extends trivially to the general case with particles spread around the grid.
+
+In order to show that this encoding of the velocity vector inevitably leads to non-unitary collision operators, let us assume a system in a specific state $\ket{\psi_1}$, with only particles traveling with velocities $\ket{v_0}$ and $\ket{v_1}$, meaning that $|\alpha_0|,|\alpha_1| > 0$ and $\alpha_2=\alpha_3=0$. Then we can write the state of the system as
+\begin{equation}\label{eq:sys1}
+\ket{\psi_1} = \ket{x}\left (\alpha_0\ket{v_0} + \alpha_1\ket{v_1} \right ).
+\end{equation}
+Now assume that an equivalent velocity combination exists consisting of particles traveling with velocities $\beta_2\ket{v_2} + \beta_3\ket{v_3}$, where we have $|\beta_2|,|\beta_3| > 0$. To realize this potential outcome of a collision as a quantum algorithm, we need to implement the transformation between both equivalent states as a unitary operation
+$U_\text{col}$ which changes the states of the velocity encodings as follows
+\begin{equation}
+\begin{split}
+     \ket{\psi_1^\prime} &= I \otimes U_\text{col} \ket{\psi_1} \\& = \ket{x}\otimes U_\text{col}\left (\alpha_0\ket{v_0} + \alpha_1\ket{v_1} \right ) \\ & =\ket{x} \left ( \gamma_0(\alpha_0\ket{v_0} + \alpha_1\ket{v_1}) + \gamma_1(\beta_2\ket{v_2} + \beta_3\ket{v_3})  \right ).
+\end{split}
+\end{equation}
+Here, if $\gamma_0=1$ and $\gamma_1=0$ no collision is taking place (and we simply implement an identity operation) and if $\gamma_1=1$ we fully change from the original velocities to its alternative representative from the same equivalence class.\footnote{Here $\gamma_0$, $\gamma_1$ are chosen to reflect the fact that a collision operation should switch weight of a combination of velocities in an equivalent class to another combination of velocities in the same equivalence class. This equation could be written in a less restrictive way by splitting $\gamma_0$ and $\gamma_1$ up into separate amplitudes $\gamma_i$ for all the basis states $\ket{v_i}$, the same contradiction of unitarity as presented below however could be reached.} Note that to preserve unitarity $|\gamma_0|^2+|\gamma_1|^2=1$ must hold.
+
+Let us now consider another system in state $\ket{\psi_2} = \ket{x}\ket{v_2}$. Applying the unitary operation $U_\text{col}$ should not effect the state at all as a single speed is only in an equivalence class with itself, and so the required behavior for $U_\text{col}$ is
+\begin{equation}\label{eq:sys2_end}
+\begin{split}
+     \ket{\psi_2^\prime} &=I \otimes U_\text{col}\ket{\psi_2} \\ & =  \ket{x}U_\text{col}\ket{v_2} \\ & = e^{i\theta}\ket{x}\ket{v_2},
+\end{split}
+\end{equation}
+with $\theta\in (0,2\pi]$. That is, the collision operator must preserve the single-velocity state except for changes in the phase factor $e^{i\theta}$ that can be neglected.
+
+Now that we have identified the required behavior for $U_\text{col}$ to implement a collision operation, we can prove that any $U_\text{col}$ that meets both requirements simultaneously cannot be unitary. Here, we resort to the characterization $U_\text{col}^\dagger U_\text{col}=I$ of unitary operators, with superscript $\dagger$ denoting the adjoint operator.
+
+\begin{proof}
+To reach a contradiction, assume that $U_\text{col}$ is a unitary operator. Then it must preserve the inner product for all possible states $\ket{\phi_1}$ and $\ket{\phi_2}$
+\begin{equation}
+    \braket{\phi_1 | \phi_2} = \bra{\phi_1} U_\text{col}^\dagger U_\text{col} \ket{\phi_2}.
+\end{equation}
+
+However, for a collision operation $U_\text{col}$ that behaves as expected on the system states described in Equations \eqref{eq:sys1} to \eqref{eq:sys2_end}, it follows that
+\begin{equation}
+\begin{split}
+0 &=\braket{\psi_1|\psi_2} \\ & = \bra{\psi_1} \left ( I \otimes U_\text{col} \right )^\dagger \left ( I \otimes U_\text{col} \right ) \ket{\psi_2} \\ & = e^{i\theta}\left ( \gamma_0(\alpha_0\bra{v_0} + \alpha_1\bra{v_1}) + \gamma_1(\beta_2\bra{v_2} + \beta_3\bra{v_3})  \right )  \bra{x} \ket{x}  \ket{v_2}  \\ & = e^{i\theta}\gamma_1\beta_2.
+\end{split}
+\end{equation}
+The first equality follows from the fact that $\ket{\psi_1}$ and $\ket{\psi_2}$ are orthogonal by construction. The second one holds under the assumption of $U_\text{col}$ being unitary, which is disproved by the fact that the entire equality chain only holds for the trivial case $\gamma_1=0$ (as $|\beta_2|>0$ by definition of the state $\ket{\psi_1}$), that is, when $U_\text{col}$ does not implement the collision operation.
+From this we can conclude that an amplitude based encoding of the velocity does not allow for a unitary implementation of the collision operation. 
+\end{proof}
+Notice that this proof works for any amplitude based encoding of $v$ where the different possible velocities at a position are all represented by their own basis state as there will always be a case with only a single incoming velocity, for which an identity operation up to a phase shift should take place, while at the same time there will be combinations of velocities for which we want some weight of the system to change from one combination of velocities to another combination of velocities in the same equivalence class. These two antagonizing requirements will always lead to the same contradiction of unitarity proven above and we further expand on this intuition in Section \ref{ssec:intuition}.
+
+
+\subsection{Computational basis state encoding}\label{ssec:comp_basis_encoding}
+The second type of encoding of a quantum state considered is the computational basis encoding, used in several quantum lattice Boltzmann papers such as \cite{Yepez1998, Yepez2001, YepezBoghosian2001, Yepez2002, Pravia2003, Moawad2022, Steijl2023}. Using this encoding the contradiction of unitarity in the collision operation can be avoided by encoding the velocity of the qubits at a position $\ket{x}$ in space by identifying each direction particles could be streamed from with its own qubit, which will be set to one if and only if there is a particle streaming from that direction.
+
+As an example consider the D2Q4 lattice depicted in Figure \ref{fig:D2Q4_ex}. In this case the velocity can be encoded using four qubits $q_0$, $q_1$, $q_2$ and $q_3$ where the state
+\begin{equation}
+    \ket{x}\ket{v} = \ket{x}\ket{q_0q_1q_2q_3} = \ket{x}\ket{0110}
+\end{equation}
+is such that from the center point $(1,1)$, there is a particle streaming to $(1,2)$ and a particle streaming to $(0,1)$ but not to $(2,1)$ or $(1,0)$. 
+
+\begin{figure}[h]
+\centering
+    \includegraphics[]{imgs/space_time/D2Q4_ex.pdf}
+    \caption{Illustration of the computational basis state encoding for the D2Q4 lattice. For each grid point $x$ we set the respective qubit $q_j$ to one if and only if there is a particle streaming in that direction, i.e. $\ket{v} = \ket{q_0q_1q_2q_3} = \ket{0110}$.}
+    \label{fig:D2Q4_ex}
+\end{figure}
+
+Using this encoding the collision step can be defined quite naturally as unitary operation. However, we run into trouble when attempting to define a unitary streaming step $U_\text{str}$ as we demonstrate in what follows. 
+
+To simplify notation let us restrict ourselves to the D1Q2 lattice and consider the two settings at time $t$ from Figures \ref{fig:D1Q2ex_1} and \ref{fig:D1Q2ex_2}, which can be encoded as
+\begin{align}
+    \ket{\psi_1} &= \sum_{x=0}^3 \ket{x}\ket{v}\\ &= \frac{1}{2}\left ( \ket{00}\ket{00} + \ket{01}\ket{11} + 
+\ket{10}\ket{10} + \ket{11}\ket{10}\right ),
+\label{eq:psi1_str}
+\end{align}
+and 
+\begin{equation}
+    \ket{\psi_2} = \frac{1}{2} \left ( \ket{00}\ket{01} + \ket{01}\ket{01} + 
+\ket{10}\ket{00} + \ket{11}\ket{11} \right ),
+\label{eq:psi2_str}
+\end{equation}
+respectively. It then follows directly that 
+\begin{equation}
+    \braket{\psi_1|\psi_2} = 0.
+    \label{eq:orthogonal}
+\end{equation}
+
+Upon streaming, the systems from Figures \ref{fig:D1Q2ex_1} and \ref{fig:D1Q2ex_2} change from their state at time $t$ (top lattice) to that at time $t+1$ (bottom lattice), i.e.
+\begin{equation}
+    \ket{\psi_1^\prime} = \frac{1}{2} \left ( \ket{00}\ket{11} + \ket{01}\ket{00} + 
+\ket{10}\ket{10} + \ket{11}\ket{10} \right ),
+\label{eq:psiprime1_str}
+\end{equation}
+and 
+\begin{equation}
+    \ket{\psi_2^\prime} = \frac{1}{2} \left ( \ket{00}\ket{11} + \ket{01}\ket{00} + 
+\ket{10}\ket{01} + \ket{11}\ket{01} \right ) ,
+\label{eq:psiprime2_str}
+\end{equation}
+respectively. As in the previous section, we will show by contradiction that any operation $U_\text{str}$ for which $U_\text{str}\ket{\psi_1} = \ket{\psi_1^\prime}$ and $U_\text{str}\ket{\psi_2} = \ket{\psi_2^\prime}$ cannot be unitary. 
+
+\begin{proof}
+    Let us assume that $U_\text{str}$ is unitary, i.e. it preserves the inner product
+    \begin{equation}
+        \braket{\phi_1 | \phi_2} = \bra{\phi_1} U^\dagger_\text{str} U_\text{str} \ket{\phi_2},
+    \end{equation}
+for all states $\ket{\phi_1}, \ket{\phi_2}$. Substituting the states \eqref{eq:psi1_str} and \eqref{eq:psi2_str} on the left side, and \eqref{eq:psiprime1_str} and \eqref{eq:psiprime2_str} into the right inner product we arrive at the contradiction 
+\begin{equation}
+    0=\braket{\psi_1 | \psi_2} = \bra{\psi_1}U_\text{str}^\dagger U_\text{str} \ket{\psi_2} =
+    \braket{\psi_1^\prime | \psi_2^\prime} = \frac{1}{2}.
+\end{equation}
+The first equality follows from the orthogonality property \eqref{eq:orthogonal}, and the second one from the assumption that $U_\text{str}$ is a unitary operator, which we just disproved.
+\end{proof}
+
+\begin{figure}
+    \centering
+     \begin{minipage}{.47\textwidth}
+         \centering
+    \includegraphics[]{imgs/space_time/D1Q2ex_1_1_t.pdf}
+         \label{fig:D1Q2ex_1_1}
+    \vspace{.5cm}
+    \end{minipage}
+    \begin{minipage}{.47\textwidth}
+        \centering
+    \includegraphics[]{imgs/space_time/D1Q2ex_1_2_t.pdf}
+         \label{fig:D1Q2ex_1_2}
+     \end{minipage}
+    
+    \caption{D1Q2 example setting 1. The binary encoding above the arrows indicate whether or not a particle is flowing there in that time step. 1 indicates that there is a particle streaming there and 0 indicates that there is no particle. In the example setting we consider periodic boundary conditions. The top figure shows the state of the system at time $t$. The figure below shows the state of the system at time $t+1$.}
+    \label{fig:D1Q2ex_1}
+\end{figure}
+
+\begin{figure}
+         \centering
+     \begin{minipage}{.47\textwidth}
+         \centering
+        \includegraphics[]{imgs/space_time/D1Q2ex_2_1_t.pdf}
+         \label{fig:y equals x}
+    \vspace{.5cm}
+     \end{minipage}
+     \begin{minipage}{.47\textwidth}
+         \centering
+\includegraphics[]{imgs/space_time/D1Q2ex_2_2_t.pdf}
+         \label{fig:three sin x}
+     \end{minipage}
+    \caption{D1Q2 example setting 2, the binary encoding above the arrows indicate whether or not a particle is flowing there in that time step. 1 indicates that there is a particle streaming there and 0 indicates that there is no particle. In the example setting we consider periodic boundary conditions. The top figure shows the state of the system at time $t$. The figure below shows the state of the system at time $t+1$.}
+    \label{fig:D1Q2ex_2}
+\end{figure}
+
+As in Section \ref{ssec:amplitude_based_encoding} this proof extends to any computational basis encoding where each possible combination of velocities at a specific lattice point is encoded using its own basis state, as one can always construct two situations with no overlap at time $t$ that will have non-zero overlap after streaming at time $t+1$. This proof also extends trivially to any other D$d$Q$q$ setting as the streaming possibilities of D1Q2 are essentially a subset of any other system and thus the same example can be used by setting the other streaming directions to 0.
+
+
+\subsection{Intuition and extension of non-unitarity proofs}\label{ssec:intuition}
+In this section we expand on our non-unitarity proofs by providing physical intuition behind the proofs presented above. It is intended to give insight into what types of encodings our non-unitarity proof extends to, and what physical features of the system necessarily lead to the non-unitarity for these encodings. 
+
+Consider the proof from Section \ref{ssec:amplitude_based_encoding} that shows that the amplitude based encoding, where each velocity direction is identified through its own basis state leaving the total velocity at a position $x$ to be a superposition of such basis states, prevents the collision operator $U_\text{col}$ from being unitary. Since it encodes each streaming direction as a different basis state, the quantum encodings of the velocity directions are all orthogonal to one another. This is also necessary, since if the basis states of the possible streaming directions are not orthogonal, we cannot fully distinguish between them. However, this orthogonality of the different velocity directions leads directly to the non-unitarity of $U_\text{col}$. Since a collision operator that will rotate a given linear combination of basis states into a linear combination of other basis states in such a way that the represented streaming patterns belong to the same equivalence class, it will also rotate `pure' velocities represented by a single basis state into another basis state leading to a nonphysical and undesired change of velocities. 
+
+Following this line of argumentation it can be seen that the non-unitarity of $U_\text{col}$ is not so much a result of a specific choice of encoding but an inherent non-unitarity of the collision step itself that directly leads to the idea of computational basis state encoding, where each velocity pattern (i.e. the combination of velocities) at a grid point is encoded as its own basis state, and not as a unitary combination of all the basis states representing a non-zero contribution.
+
+When encoding the velocity pattern at each grid point as a basis state, naturally, the non-unitarity of collision falls away and we can find a straightforward unitary operator to implement the collision step.
+However, such an encoding will always lead to non-unitarity of streaming due to the non-local nature of a streaming operation. Consider an arbitrary point in space $x$ and imagine two different scenarios with two different combinations of speeds $\ket{v_1}$ and $\ket{v_2}$ at this point. Then the inner product between $\ket{x}\ket{v_1}$ and $\ket{x}\ket{v_2}$ must be 0, as these are different basis states. However, the velocity states of the systems at position $x$ in the next time step do not depend on the current velocity states in the lattice point. In fact, they only depend on the velocity states of the neighboring lattice points. Since the inner product of the states at the point $x$ at the next time step does not depend on the current states at the point $x$, in the next time step the velocity at the point $x$ of the two systems could be identical, and hence, the inner product could be one. There is no way of ensuring that this can only happen when the inner product at some other point $x^\prime$ of the systems was non-zero before as each grid point has velocity vectors in multiple directions determining its associated velocity basis state. 
+
+This shows that any quantum encoding that successfully implements both streaming and collision as a unitary operation must belong to one of the following three types. The first type is an amplitude based type encoding, where the different velocities are not orthogonal and thus not entirely distinguishable. The second type is a computational basis state encoding where the non-locality of streaming is somehow avoided. The last type is a completely novel encoding method that avoids both non-unitarity problems entirely.
+In the next section we will present precisely one such idea.
+
+
+\section{Space-time data encoding}\label{sec:novel_encoding}
+In this section we propose a novel space-time data encoding that enables unitary collision \emph{and} streaming at the same time. To the best of our knowledge, this is the first-of-its-kind start-to-end quantum Boltzmann algorithm that does not require measurement and quantum-state re-initialization after each time step.
+
+In what follows, we adopt an extended computational basis state encoding, where at each location $x$ we take into account the velocities at all grid points in the vicinity of $x$. Here, `in the vicinity of $x$' means that a particle can theoretically reach the grid point $x$ within the number of time steps still to be performed before measurement. Mathematically speaking being `in the vicinity of $x$' means being, respectively, in the so-called extended von Neumann, Moore or hexagonal neighborhood of the point $x$, depending on the lattice structure.\footnote{The von Neumann neighborhood of extent $r$ defines the diamond-shaped set of points at a Manhattan distance of up to $r$ from the point $x$. It applies to, e.g., D2Q4, D2Q5, D3Q6, and D3Q7. The Moore distance extends the former one by diagonal directions and applies to, e.g., D2Q8, D2Q9, D3Q26, and D3Q27. As its name suggests, the hexagonal neighborhood applies to D2Q6 and its extension to its three-dimensional counterpart.} 
+
+This leads to a trade-off between the number of time steps that can be performed between measurements and the number of qubits required to encode the velocity at each grid point $x$. The more time steps one wishes to take between measurement-and-re-initialization cycles, the more qubits are required for our space-time encoding. Obviously the maximum number of qubits required to implement the velocity without any in-between measurements must be such that the entire grid is spanned. For a D$d$Q$q$ lattice this will be $qN_g$, where $N_g$ is the total number of grid points. When encoding the proposed method on a classical computer $qN_g$ bits would also be required, so when encoding the full domain there is no quantum benefit in terms of (qu)bit numbers. The quantum improvement comes from exploiting quantum parallelism, which is done as long as we do not encode the whole space.
+
+In what follows, let $N_t$ denote the number of streaming steps to be performed between (re-)initialization and measurement. We extend the computational basis state encoding of velocity directions from Section \ref{ssec:comp_basis_encoding} to take into account all the speed states from grid points in the neighborhood of $x$ that can (at least theoretically) reach $x$ within $N_t$ streaming steps. This takes away the non-locality of the streaming operator, which led to the non-unitarity of $U_\text{str}$ for the `regular' computational basis state encoding at the cost of increasing the number of qubits required to encode all required velocity data.
+
+We will give a detailed description of this encoding for the D2Q4 lattice, but want to note that it can be extended naturally to any other choice of D$d$Q$q$. Consider the D2Q4 lattice given in Figure \ref{fig:D2Q4} with qubit $q_j$ set to one if and only if there is a particle traveling with velocity direction $j$ from grid point $x$ into a neighboring grid point in the current time step. We now extend this encoding to include \emph{all} possible velocities at positions `in the vicinity of $x$' for the total of $N_t$ time steps in order to obtain a unitarily streamable encoding. This is illustrated in Figure \ref{fig:D2Q4_quantum} for a single time step, i.e. $N_t=1$ yielding the encoding
+\begin{equation}
+    \ket{x}\ket{q_{19}q_{18} \dots q_0}.
+\end{equation}
+For D2Q4, the number of qubits encoding the possible velocity states per grid location $x$ grows with the number of time steps (still) to be taken as
+\begin{equation}\label{eq:von_Neumann}
+    n_v = 4 + \sum_{i=1}^{N_t}16i = 8N_t^2 + 8N_t + 4,
+\end{equation}
+where the maximum number of qubits required to encode all velocity directions over the entire grid equals $4N_g$ as stated before.\footnote{Note that the growth rate of qubit numbers per time step depends on the choice of D$d$Q$q$. The number of qubits required is equal to the number of points in the extended Von Neumann, Moore or hexagonal neighborhood, depending on which choice of $d$ and $q$ considered.}
+Similarly it can be shown that for $d$ dimensions the growth rate is of the order $\mathcal{O}\left (N_t^d \right)$.
+
+We can now encode the collision step by first identifying the equivalence class for the D2Q4 lattice. We note that at each grid point $x$ as represented in Figure \ref{fig:D2Q4} the states $\ket{q_0q_1q_2q_3} = \ket{1010}$ and $\ket{q_0q_1q_2q_3} = \ket{0101}$ belong to the same equivalence class (cf. Figure \ref{fig:equivalence_class}), as they have the same total mass and momentum.\footnote{The other equivalence classes are $\ket{q_0q_1q_2q_3} = \ket{1000}$ and $\ket{q_0q_1q_2q_3} = \ket{1100}$ and all cyclic shifts of these patterns, and $\ket{q_0q_1q_2q_3} = \ket{1111}$. However, they all have just a single representative so that we define the collision operator based on the ambiguous case.} We implement the collision step by defining a unitary operator $U_\text{col}$ which performs the following mappings 
+\begin{align}
+    U_\text{col}\ket{1010} &= \phantom{-}\alpha\ket{1010} + \beta\ket{0101},\\
+    U_\text{col}\ket{0101} &= -\beta\ket{1010} + \alpha\ket{0101},
+\end{align} 
+with $\alpha, \beta \in \mathbb{C}$ and $|\alpha|^2+|\beta|^2=1$,
+while acting as the identity operation on any other basis state. It can easily be verified that this operation is unitary. With the so-defined $U_\text{col}\in \mathbb{C}^{2^4 \otimes 2^4}$, we can write the total collision operation for an encoding of the velocities states $v$ consisting of $n_v=4k$ qubits as $k$-fold Kronecker products of $U_\text{col}$ operations, i.e.  $U_\text{col}^\text{tot}=U_\text{col} \otimes \dots \otimes U_\text{col}$. Since each $U_\text{col}$ requires a few CNOT and a single triple controlled rotation gate the total collision operator can be efficiently implemented even on near-term devices.\footnote{We can implement the described collision operator by first applying three CNOT operations to the system turning the states into $\ket{1010} \mapsto \ket{1110}$ and $\ket{0101} \mapsto \ket{1111}$. Subsequently a triple controlled rotation operation of choice is applied to the right-most qubit (controlled on the three left-most qubits). Finally the initial three CNOT operations are applied in reverse order to reset all velocity states correctly.}
+
+In practice the total collision operator $U_\text{col}^\text{tot}$ differs per time step, since its local counterpart $U_\text{col}$ only needs to be applied to velocity states `in the vicinity of $x$'. 
+In the first out of the $N_t$ time steps it is important for all qubits representing velocity states `in the vicinity of $x$' to be updated correctly. In the very last time step, however, it is only important for the qubits $q_0$, $q_1$, $q_2$ and $q_3$ to end up in the correct state. The more time steps $t$ have been taken, the less time steps $N_t-t$ are still to be taken and so the 4-qubit local collision operator $U_\text{col}$ only needs to be applied to the remaining qubits relevant for encoding the `directly connected' velocity states as given in Equation \eqref{eq:von_Neumann}. 
+
+With this logic we can define a collision operator per time step $t$ as
+\begin{equation}
+U_{\text{col},t}^\text{tot}=\underbrace{U_\text{col} \otimes \dots \otimes U_\text{col}}_{\text{$c$  collision operations}} \otimes \underbrace{I \otimes \dots \otimes I}_{\text{identity operations}},
+\end{equation}
+where $c = 2(N_t-t)^2 + 2(N_t-t) +1$ and the identity operations are added to avoid dimensionality issues. In practice no operation will be applied on the qubits encoding velocity states not `in the vicinity of $x$' within $N_t-t$ time steps. 
+
+Our space-time encoding enables different manners of implementing the streaming step. It can easily be seen that the way the streaming method should be implemented differs per time step $t$ depending on which positions will be `in the vicinity of $x$' in the next time step as well. At the first time step it is important for (almost) all qubits to be streamed to a very specific position, whereas in the last time step it is only important for the qubits $q_0$, $q_1$, $q_2$ and $q_3$ to end up in the correct state. For the example shown below we are only considering a total of one step to be taken (i.e. $N_t=1$) and so we only need to consider the speeds that will stream to location $x$ in one time step. In this case that means that streaming consists of performing a swap operation between the following qubit pairs $q_0$ and $q_{12}$, $q_1$ and $q_{17}$, $q_2$ and $q_6$ as well as $q_3$ and $q_{11}$.  
+
+Also in general (i.e. $N_t>1$), the streaming step can be implemented by a combination of swap gates. Following the same in-the-vicinity-of-$x$ argument as was used for the collision step, a total of 
+\begin{equation}
+n_\text{swap}(t) = 4+\sum_{i=1}^{N_t-t }16i = 8 \left ( N_t - t \right )^2 + 8\left ( N_t - t \right ) +4
+\end{equation}
+swap gates are required to update as many velocity-encoding qubits in time step $t$, whereby these swap operations can be performed largely in parallel.\footnote{In each time step the swap operations in the 4 (or generally speaking $q$) different directions can be performed in parallel. Furthermore the swap operations for the velocities in the same direction but not in the same `line of streaming' can all be performed in parallel. Therefore we only need to take into account the velocities in the same line of streaming and the depth of the circuit is determined by the longest `line of streaming', which is equal to $N_t-t$. In each layer of the swap operations at least half of the $N_t-t$ velocities can be swapped to the correct position. Therefore a total of $\log_2 \left (N_t-t \right )$ swap operations needs to be performed in the $t$-th time step.}
+The depth of the streaming circuit at time $t$ will amount to 
+\begin{equation}
+    d_\text{str}(t) = \log_2 \left ( N_t-t \right )
+\end{equation}
+swap operations at time $t$. 
+
+
+\begin{figure}[h]
+\centering
+    \includegraphics[]{imgs/space_time/D2Q4.pdf}
+    \caption{Illustration of the computational basis state encoding for D2Q4.}
+    \label{fig:D2Q4}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+    \includegraphics[]{imgs/space_time/D2Q4_quantum.pdf}
+    \caption{Illustration of the space-time encoding for D2Q4 for a single time step.}
+    \label{fig:D2Q4_quantum}
+\end{figure}
